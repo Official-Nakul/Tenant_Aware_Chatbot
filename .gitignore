@@ -1,3 +1,5 @@
 venv/
 TAC_V1/
 .ipynb_checkpoints
+.env
+.idea/
