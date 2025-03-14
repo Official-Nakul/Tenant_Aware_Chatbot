@@ -3,15 +3,18 @@ import { Card, CardFooter, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send, Image as ImageIcon, Paperclip } from "lucide-react";
+import mobileExample from "/src/assets/insat1.png";
+// import defaultAvatar from "/images/user-avatar.png";
+// import botAvatar from "/images/bot-avatar.png";
 
 export function Chat() {
   const [inputValue, setInputValue] = useState("");
 
   // Local image paths - replace these with your actual local image paths
   const localImages = {
-    mobileExample: "/src/assets/insat1.png",
-    defaultAvatar: "/images/user-avatar.png",
-    botAvatar: "/images/bot-avatar.png",
+    mobileExample,
+    // defaultAvatar,
+    // botAvatar,
   };
 
   // Dummy chat messages with both text and image content
@@ -150,7 +153,7 @@ export function Chat() {
                 {/* <div className="w-8 h-8 rounded-full overflow-hidden mr-2">
                   <img 
                     src={message.sender === "human" ? localImages.defaultAvatar : localImages.botAvatar} 
-                    alt={`${message.sender} avatar`} 
+                    alt={${message.sender} avatar} 
                     className="w-full h-full object-cover" 
                   />
                 </div> */}
