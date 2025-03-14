@@ -9,8 +9,7 @@ export function Chat() {
 
   // Local image paths - replace these with your actual local image paths
   const localImages = {
-    dashboardExample: "/src/assets/clove.jpeg",
-    mobileExample: "/src/assets/arle.png",
+    mobileExample: "/src/assets/insat1.png",
     defaultAvatar: "/images/user-avatar.png",
     botAvatar: "/images/bot-avatar.png",
   };
@@ -27,40 +26,40 @@ export function Chat() {
       id: 2,
       sender: "human",
       type: "text",
-      content: "What is mosdac",
+      content: "What is insat-3dr",
     },
     {
       id: 3,
       sender: "bot",
       type: "text",
-      content: "Sure! Here's an example of a modern dashboard design:",
-    },
-    {
-      id: 4,
-      sender: "bot",
-      type: "image",
-      content: localImages.dashboardExample,
-      caption: "Modern dashboard UI example with dark mode",
+      content:
+        " INSAT-3DR is a specialized weather satellite! It's designed to give us better weather observations and monitor land and ocean surfaces. Think of it as a super-powered weather watcher!",
     },
     {
       id: 5,
       sender: "human",
       type: "text",
-      content:
-        "That looks great! Do you have any examples of mobile interfaces?",
+      content: "What kind of equipment does it have?",
     },
     {
       id: 6,
       sender: "bot",
       type: "text",
-      content: "Absolutely, here's a mobile app interface example:",
+      content:
+        "It's packed with cool tech! It carries a Sounder and an Imager for detailed weather pictures, a Data Relay Transponder (DRT) to send information, and a Satellite Aided Search & Rescue (SAS&R) system to help in emergencies.",
     },
     {
       id: 7,
+      sender: "human",
+      type: "text",
+      content: "can you give me example what does it do",
+    },
+    {
+      id: 8,
       sender: "bot",
       type: "image",
       content: localImages.mobileExample,
-      caption: "Mobile app interface with card components",
+      caption: "Here is a example of iamges taken with INSAT-3DR",
     },
   ]);
 
@@ -171,11 +170,11 @@ export function Chat() {
                         src={message.content}
                         alt={message.caption || "Chat image"}
                         className="w-full h-auto object-cover"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = "/images/fallback-image.jpg"; // Fallback image
-                          console.error("Image failed to load, using fallback");
-                        }}
+                        // onError={(e) => {
+                        //   e.target.onerror = null;
+                        //   e.target.src = "/images/fallback-image.jpg"; // Fallback image
+                        //   console.error("Image failed to load, using fallback");
+                        // }}
                       />
                       {message.caption && (
                         <div
