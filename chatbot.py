@@ -1,14 +1,17 @@
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
-import asyncio  # Needed for async streaming
+import json
+import re
+import requests
 
 load_dotenv()
 
 app = FastAPI()
 
+# Define LLM
 llm = ChatGroq(
     model="mixtral-8x7b-32768",
     temperature=0,
@@ -17,21 +20,58 @@ llm = ChatGroq(
     max_retries=2,
 )
 
+
+# Define request model
+class ChatRequest(BaseModel):
+    message: str
+
+
+# Define API request function
+def trigger_api(action, robot_id):
+    url = "https://multi-robot-control-dashboard.onrender.com/api/robots/commands"
+    headers = {
+        "Content-Type": "application/json",
+        "x-api-key": "push_server_robot_authentication",
+    }
+    payload = {"robotId": robot_id, "command": action}
+
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        return {"error": str(e)}
+
+
 @app.post("/chat/")
-async def chat_with_robot(request: dict):
+def chat_with_robot(request: ChatRequest):
     messages = [
         SystemMessage(
-            content="You are a smart AI assistant that extracts 'robot_id' and 'action'. "
-                    "Output a **valid JSON object** in this format: {'robot_id': '<robot_name>', 'action': '<direction>'}. "
-                    "Ensure 'action' contains only 'forward', 'backward', 'left', or 'right'. "
-                    "Respond only with the JSON object, nothing else."
+            content="You are a smart AI assistant that extracts two values: 'robot_id' and 'action'. "
+                    "Output a **valid JSON object** in this exact format: {'robot_id': '<robot_name>', 'action': '<direction>'}. "
+                    "Ensure that 'action' contains only the direction (e.g., 'forward', 'backward', 'left', 'right') without additional words like 'move' or 'go'. "
+                    "If the action is abbreviated, expand it to its full form (e.g., 'fwd' → 'forward'). "
+                    "Do not add extra words or explanations. Respond only with the JSON object, nothing else."
         ),
-        HumanMessage(content=request["message"]),
+        HumanMessage(content=request.message),
     ]
 
-    async def response_stream():
-        async for chunk in llm.stream(messages):  # 👈 Streaming AI response
-            yield chunk.content  # Yield chunk-by-chunk
+    try:
+        ai_msg = llm.invoke(messages)
+        raw_response = ai_msg.content
 
-    return StreamingResponse(response_stream(), media_type="text/plain")
+        # Fix escape sequences if necessary
+        fixed_response = re.sub(r'\\_', '_', raw_response)
+
+        # Ensure valid JSON
+        msg = json.loads(fixed_response)
+
+        # Call API to trigger robot action
+        api_response = trigger_api(msg["action"], msg["robot_id"])
+        return {"llm_response": msg, "api_response": api_response}
+
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="Invalid JSON response from AI.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
