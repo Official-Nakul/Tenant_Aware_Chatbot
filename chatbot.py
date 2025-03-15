@@ -31,7 +31,7 @@ def trigger_api(action, robot_id):
     url = "https://multi-robot-control-dashboard.onrender.com/api/robots/commands"
     headers = {
         "Content-Type": "application/json",
-        "x-api-key": "push_server_robot_authentication",
+        "x-api-key": "chat_bot_robot_authentication",
     }
     payload = {"robotId": robot_id, "command": action}
 
