@@ -91,13 +91,16 @@ export function AddApiForm() {
     setIsSubmitting(true); // Disable the submit button
 
     try {
-      const response = await fetch("http://localhost:5000/api/add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ apiData, endpoints }),
-      });
+      const response = await fetch(
+        "https://tenant-aware-chatbot-1.onrender.com/api/add",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ apiData, endpoints }),
+        }
+      );
 
       if (response.ok) {
         alert("API added successfully");
