@@ -6,10 +6,18 @@ from langchain_core.messages import SystemMessage, HumanMessage
 import json
 import re
 import requests
-
+from fastapi.middleware.cors import CORSMiddleware
 load_dotenv()
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Define LLM
 llm = ChatGroq(
