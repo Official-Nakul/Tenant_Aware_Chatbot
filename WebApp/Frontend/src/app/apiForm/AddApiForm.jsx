@@ -39,6 +39,8 @@ export function AddApiForm() {
     },
   ]);
 
+  const [isSubmitting, setIsSubmitting] = useState(false); // To prevent multiple submissions
+
   const handleApiDataChange = (e) => {
     const { name, value } = e.target;
     setApiData((prev) => ({
@@ -64,19 +66,13 @@ export function AddApiForm() {
     ]);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    // Add API submission logic here
-    console.log("API form submitted:", { apiData, endpoints });
-
-    // Reset form after submission
+  const clearForm = () => {
     setApiData({
       companyName: "",
       baseUrl: "",
       purpose: "",
       apiKey: "",
     });
-
     setEndpoints([
       {
         id: 1,
@@ -86,6 +82,35 @@ export function AddApiForm() {
         params: "",
       },
     ]);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (isSubmitting) return; // Prevent multiple submissions
+
+    setIsSubmitting(true); // Disable the submit button
+
+    try {
+      const response = await fetch("http://localhost:5000/api/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ apiData, endpoints }),
+      });
+
+      if (response.ok) {
+        alert("API added successfully");
+        clearForm(); // Clear the form after successful submission
+      } else {
+        alert("Failed to add API");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Error submitting form");
+    } finally {
+      setIsSubmitting(false); // Re-enable the submit button
+    }
   };
 
   return (
@@ -251,8 +276,13 @@ export function AddApiForm() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full mt-6">
-            Save API Integration
+          {/* Submit Button */}
+          <Button
+            type="submit"
+            className="w-full mt-6"
+            disabled={isSubmitting} // Disable button while submitting
+          >
+            {isSubmitting ? "Submitting..." : "Save API Integration"}
           </Button>
         </form>
       </CardContent>
