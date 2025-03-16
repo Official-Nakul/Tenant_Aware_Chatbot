@@ -19,6 +19,11 @@ export default defineConfig({
         secure: false,
         // rewrite: (path) => path.replace(/^\/chat/, ""),
       },
+      "/api": {
+        target: "https://tenant-aware-chatbot-1.onrender.com/",
+        changeOrigin: true,
+        secure: false,
+      },
     },
     cors: false, // This is not needed here; CORS is handled by the backend
   },
