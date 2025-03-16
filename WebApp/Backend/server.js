@@ -3,7 +3,22 @@ const { Pool } = require("pg");
 const cors = require("cors");
 require("dotenv").config();
 const app = express();
-app.use(cors());
+const allowedOrigins = [
+  "https://tenant-aware-chatbot-ebl5dzn0v-official-nakuls-projects.vercel.app",
+  "http://localhost:3000", // Add localhost for development
+];
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 NEON_CONNECTION_URI = process.env.NEON_CONNECTION_URI;
