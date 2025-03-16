@@ -36,7 +36,7 @@ class ChatRequest(BaseModel):
 
 # Define API request function
 def trigger_api(action, robot_id):
-    url = "https://multi-robot-control-dashboard.onrender.com/api/robots/commands"
+    url = "https://multi-robot-control-dashboard.onrender.com/api/robots/command"
     headers = {
         "Content-Type": "application/json",
         "x-api-key": "chat_bot_robot_authentication",

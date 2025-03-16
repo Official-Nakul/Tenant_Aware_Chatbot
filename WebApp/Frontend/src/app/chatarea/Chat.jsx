@@ -2,139 +2,77 @@ import React, { useState } from "react";
 import { Card, CardFooter, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Image as ImageIcon, Paperclip } from "lucide-react";
-import mobileExample from "/src/assets/insat1.png";
-// import defaultAvatar from "/images/user-avatar.png";
-// import botAvatar from "/images/bot-avatar.png";
+import { Send, Image as ImageIcon } from "lucide-react";
 
 export function Chat() {
   const [inputValue, setInputValue] = useState("");
-
-  // Local image paths - replace these with your actual local image paths
-  const localImages = {
-    mobileExample,
-    // defaultAvatar,
-    // botAvatar,
-  };
-
-  // Dummy chat messages with both text and image content
   const [messages, setMessages] = useState([
     {
       id: 1,
       sender: "bot",
       type: "text",
-      content: "Hello! How can I help you today?",
-    },
-    {
-      id: 2,
-      sender: "human",
-      type: "text",
-      content: "What is insat-3dr",
-    },
-    {
-      id: 3,
-      sender: "bot",
-      type: "text",
-      content:
-        " INSAT-3DR is a specialized weather satellite! It's designed to give us better weather observations and monitor land and ocean surfaces. Think of it as a super-powered weather watcher!",
-    },
-    {
-      id: 5,
-      sender: "human",
-      type: "text",
-      content: "What kind of equipment does it have?",
-    },
-    {
-      id: 6,
-      sender: "bot",
-      type: "text",
-      content:
-        "It's packed with cool tech! It carries a Sounder and an Imager for detailed weather pictures, a Data Relay Transponder (DRT) to send information, and a Satellite Aided Search & Rescue (SAS&R) system to help in emergencies.",
-    },
-    {
-      id: 7,
-      sender: "human",
-      type: "text",
-      content: "can you give me example what does it do",
-    },
-    {
-      id: 8,
-      sender: "bot",
-      type: "image",
-      content: localImages.mobileExample,
-      caption: "Here is a example of iamges taken with INSAT-3DR",
+      content: "Hello! I'm your AI assistant. How can I help you today?",
     },
   ]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [showImageUpload, setShowImageUpload] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [selectedImagePreview, setSelectedImagePreview] = useState("");
-
-  const handleImageChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedImage(file);
-
-      // Create a preview URL for the selected image
-      const previewUrl = URL.createObjectURL(file);
-      setSelectedImagePreview(previewUrl);
-    }
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const newMessages = [];
+    if (!inputValue.trim()) return;
 
-    // Add user text message if there's input
-    if (inputValue.trim()) {
-      newMessages.push({
-        id: messages.length + 1,
-        sender: "human",
-        type: "text",
-        content: inputValue,
-      });
-    }
+    // Add the user's message to the chat
+    const userMessage = {
+      id: messages.length + 1,
+      sender: "human",
+      type: "text",
+      content: inputValue,
+    };
+    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    setInputValue("");
 
-    // Add user image message if there's a selected image
-    if (selectedImagePreview) {
-      newMessages.push({
-        id: messages.length + 1 + (inputValue.trim() ? 1 : 0),
-        sender: "human",
-        type: "image",
-        content: selectedImagePreview,
-        caption: selectedImage.name || "Uploaded image",
-      });
-    }
-
-    if (newMessages.length > 0) {
-      setMessages([...messages, ...newMessages]);
-
-      // Clear inputs
-      setInputValue("");
-      setSelectedImage(null);
-      setSelectedImagePreview("");
-      setShowImageUpload(false);
-
-      // Simulate bot response
-      setTimeout(() => {
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            id: prevMessages.length + 1,
-            sender: "bot",
-            type: "text",
-            content:
-              "Thanks for sharing! Is there anything specific you want to discuss about these designs?",
+    // Send the message to the FastAPI backend
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        "https://tenant-aware-chatbot.onrender.com/chat/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        ]);
-      }, 1000);
-    }
-  };
+          body: JSON.stringify({ message: inputValue }),
+        }
+      );
 
-  const cancelImageUpload = () => {
-    setSelectedImage(null);
-    setSelectedImagePreview("");
+      if (!response.ok) {
+        throw new Error("Failed to fetch response from the API");
+      }
+
+      const data = await response.json();
+
+      // Add the bot's response to the chat
+      const botMessage = {
+        id: messages.length + 2,
+        sender: "bot",
+        type: "text",
+        content: `Action: ${data.llm_response.action}, Robot: ${
+          data.llm_response.robot_id
+        }. API Response: ${JSON.stringify(data.api_response)}`,
+      };
+      setMessages((prevMessages) => [...prevMessages, botMessage]);
+    } catch (error) {
+      console.error("Error fetching response from the API:", error);
+      const errorMessage = {
+        id: messages.length + 2,
+        sender: "bot",
+        type: "text",
+        content: "Sorry, I couldn't process your request. Please try again.",
+      };
+      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -149,15 +87,6 @@ export function Chat() {
                   message.sender === "human" ? "justify-end" : "justify-start"
                 }`}
               >
-                {/* Avatar - uncomment if you want to display avatars */}
-                {/* <div className="w-8 h-8 rounded-full overflow-hidden mr-2">
-                  <img 
-                    src={message.sender === "human" ? localImages.defaultAvatar : localImages.botAvatar} 
-                    alt={${message.sender} avatar} 
-                    className="w-full h-full object-cover" 
-                  />
-                </div> */}
-
                 <div
                   className={`max-w-xs md:max-w-md rounded-lg overflow-hidden ${
                     message.sender === "human"
@@ -165,77 +94,21 @@ export function Chat() {
                       : "bg-gray-100 text-black"
                   }`}
                 >
-                  {message.type === "text" ? (
-                    <div className="p-3">{message.content}</div>
-                  ) : (
-                    <div className="flex flex-col">
-                      <img
-                        src={message.content}
-                        alt={message.caption || "Chat image"}
-                        className="w-full h-auto object-cover"
-                        // onError={(e) => {
-                        //   e.target.onerror = null;
-                        //   e.target.src = "/images/fallback-image.jpg"; // Fallback image
-                        //   console.error("Image failed to load, using fallback");
-                        // }}
-                      />
-                      {message.caption && (
-                        <div
-                          className={`p-2 text-sm ${
-                            message.sender === "human"
-                              ? "text-blue-100"
-                              : "text-gray-600"
-                          }`}
-                        >
-                          {message.caption}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div className="p-3">{message.content}</div>
                 </div>
               </div>
             ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 text-black rounded-lg p-3">
+                  Typing...
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
 
         <CardFooter className="self-end w-full sticky bottom-0 bg-white border-t flex-col p-3">
-          {showImageUpload && (
-            <div className="w-full mb-3">
-              {selectedImagePreview ? (
-                <div className="relative mb-2">
-                  <img
-                    src={selectedImagePreview}
-                    alt="Preview"
-                    className="h-32 object-contain rounded border border-gray-200"
-                  />
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-1 right-1 h-6 w-6 p-1 rounded-full"
-                    onClick={cancelImageUpload}
-                  >
-                    ✕
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-lg mb-2">
-                  <label className="flex flex-col items-center justify-center cursor-pointer w-full h-full">
-                    <ImageIcon className="h-8 w-8 text-gray-400 mb-2" />
-                    <span className="text-sm text-gray-500">
-                      Click to upload image
-                    </span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                    />
-                  </label>
-                </div>
-              )}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="flex w-full gap-2">
             <Input
               type="text"
@@ -244,20 +117,7 @@ export function Chat() {
               onChange={(e) => setInputValue(e.target.value)}
               className="flex-grow"
             />
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => setShowImageUpload(!showImageUpload)}
-              className={showImageUpload ? "bg-blue-100" : ""}
-            >
-              <ImageIcon className="h-4 w-4" />
-            </Button>
-            <Button
-              type="submit"
-              size="icon"
-              disabled={!inputValue.trim() && !selectedImagePreview}
-            >
+            <Button type="submit" size="icon" disabled={!inputValue.trim()}>
               <Send className="h-4 w-4" />
             </Button>
           </form>
