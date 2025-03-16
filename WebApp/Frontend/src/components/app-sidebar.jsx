@@ -55,7 +55,7 @@ const data = {
   ],
 };
 
-export function AppSidebar({ ...props }) {
+export function AppSidebar({ onNavItemClick, ...props }) {
   // Note: I'm using state to show active item.
   // IRL you should use the url/router.
   const [activeItem, setActiveItem] = React.useState(data.navMain[0]);
@@ -107,6 +107,10 @@ export function AppSidebar({ ...props }) {
                         setActiveItem(item);
                         setMails(data.mails); // Directly setting the mails without randomization
                         setOpen(item.title === "Chat History");
+                        // Call the onNavItemClick prop to update parent component
+                        if (onNavItemClick) {
+                          onNavItemClick(item.title);
+                        }
                       }}
                       isActive={activeItem?.title === item.title}
                       className="px-2.5 md:px-2"
