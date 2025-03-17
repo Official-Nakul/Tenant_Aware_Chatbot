@@ -27,6 +27,8 @@ export function AddApiForm() {
     baseUrl: "",
     purpose: "",
     apiKey: "",
+    headers: JSON.stringify(), // Initialize headers as an empty JSON object
+    authType: "", // New field for authentication type
   });
 
   const [endpoints, setEndpoints] = useState([
@@ -35,7 +37,8 @@ export function AddApiForm() {
       path: "",
       method: "GET",
       purpose: "",
-      params: "",
+      params: JSON.stringify(), // Initialize params as an empty JSON object
+      headers: JSON.stringify(), // Initialize headers as an empty JSON object
     },
   ]);
 
@@ -62,7 +65,14 @@ export function AddApiForm() {
       endpoints.length > 0 ? Math.max(...endpoints.map((e) => e.id)) + 1 : 1;
     setEndpoints([
       ...endpoints,
-      { id: newId, path: "", method: "GET", purpose: "", params: "" },
+      {
+        id: newId,
+        path: "",
+        method: "GET",
+        purpose: "",
+        params: JSON.stringify({}),
+        headers: JSON.stringify({}),
+      },
     ]);
   };
 
@@ -72,6 +82,8 @@ export function AddApiForm() {
       baseUrl: "",
       purpose: "",
       apiKey: "",
+      headers: JSON.stringify({}),
+      authType: "",
     });
     setEndpoints([
       {
@@ -79,7 +91,8 @@ export function AddApiForm() {
         path: "",
         method: "GET",
         purpose: "",
-        params: "",
+        params: JSON.stringify({}),
+        headers: JSON.stringify({}),
       },
     ]);
   };
@@ -173,6 +186,37 @@ export function AddApiForm() {
                 rows={2}
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="headers">Headers</Label>
+              <Textarea
+                id="headers"
+                name="headers"
+                value={apiData.headers}
+                onChange={handleApiDataChange}
+                placeholder='{"Authorization": "Bearer token", "Content-Type": "application/json"}'
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="authType">Authentication Type</Label>
+              <Select
+                value={apiData.authType}
+                onValueChange={(value) =>
+                  setApiData((prev) => ({ ...prev, authType: value }))
+                }
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Select authentication type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="API Key">API Key</SelectItem>
+                  <SelectItem value="OAuth">OAuth</SelectItem>
+                  <SelectItem value="Bearer Token">Bearer Token</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Endpoints Table */}
@@ -189,6 +233,7 @@ export function AddApiForm() {
                     </TableHead>
                     <TableHead>Purpose</TableHead>
                     <TableHead>Parameters/Schema</TableHead>
+                    <TableHead>Headers</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -254,9 +299,25 @@ export function AddApiForm() {
                               e.target.value
                             )
                           }
-                          placeholder="param1_name: required, param2_name: optional"
+                          placeholder='{"param1": "required", "param2": "optional"}'
                           className="min-h-0 h-9 py-2"
-                          required
+                          rows={2}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="text"
+                          value={endpoint.headers}
+                          onChange={(e) =>
+                            handleEndpointChange(
+                              endpoint.id,
+                              "headers",
+                              e.target.value
+                            )
+                          }
+                          placeholder='{"Content-Type": "application/json"}'
+                          className="min-h-0 h-9 py-2"
+                          rows={2}
                         />
                       </TableCell>
                     </TableRow>

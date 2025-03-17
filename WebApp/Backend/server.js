@@ -2,23 +2,27 @@ const express = require("express");
 const { Pool } = require("pg");
 const cors = require("cors");
 require("dotenv").config();
+
 const app = express();
+
+// Enable CORS for specific origins
 const allowedOrigins = [
   "https://tenant-aware-chatbot-ebl5dzn0v-official-nakuls-projects.vercel.app",
   "http://localhost:3000", // Add localhost for development
 ];
+
 app.use(
   cors({
     origin: true, // Allows any origin dynamically
     credentials: true,
   })
 );
+
 app.use(express.json());
 
-NEON_CONNECTION_URI = process.env.NEON_CONNECTION_URI;
 // Replace with your Neon database connection string
 const pool = new Pool({
-  connectionString: NEON_CONNECTION_URI,
+  connectionString: process.env.NEON_CONNECTION_URI,
 });
 
 // Create API and endpoints in the database
@@ -30,21 +34,48 @@ app.post("/api/add", async (req, res) => {
 
     // Insert API data
     const apiRes = await client.query(
-      "INSERT INTO apis(company_name, base_url, purpose, api_key) VALUES($1, $2, $3, $4) RETURNING id",
-      [apiData.companyName, apiData.baseUrl, apiData.purpose, apiData.apiKey]
+      `
+      INSERT INTO apis (
+        company_name, 
+        base_url, 
+        purpose, 
+        api_key, 
+        headers, 
+        auth_type
+      ) VALUES ($1, $2, $3, $4, $5, $6) 
+      RETURNING id
+      `,
+      [
+        apiData.companyName,
+        apiData.baseUrl,
+        apiData.purpose,
+        apiData.apiKey,
+        apiData.headers,
+        apiData.authType,
+      ]
     );
     const apiId = apiRes.rows[0].id;
 
     // Insert endpoints
     for (let endpoint of endpoints) {
       await client.query(
-        "INSERT INTO endpoints(api_id, path, method, purpose, params) VALUES($1, $2, $3, $4, $5)",
+        `
+        INSERT INTO endpoints (
+          api_id, 
+          path, 
+          method, 
+          purpose, 
+          params, 
+          headers
+        ) VALUES ($1, $2, $3, $4, $5, $6)
+        `,
         [
           apiId,
           endpoint.path,
           endpoint.method,
           endpoint.purpose,
           endpoint.params,
+          endpoint.headers,
         ]
       );
     }
@@ -70,13 +101,20 @@ app.get("/api/all", async (req, res) => {
         apis.base_url,
         apis.purpose,
         apis.api_key,
+        apis.headers,
+        apis.auth_type,
+        apis.created_at,
+        apis.updated_at,
         json_agg(
           json_build_object(
             'id', endpoints.id,
             'path', endpoints.path,
             'method', endpoints.method,
             'purpose', endpoints.purpose,
-            'params', endpoints.params
+            'params', endpoints.params,
+            'headers', endpoints.headers,
+            'created_at', endpoints.created_at,
+            'updated_at', endpoints.updated_at
           )
         ) AS endpoints
       FROM apis
