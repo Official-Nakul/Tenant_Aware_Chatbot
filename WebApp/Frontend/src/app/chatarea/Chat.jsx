@@ -21,9 +21,9 @@ export function Chat() {
 
     if (!inputValue.trim()) return;
 
-    // Add the user's message to the chat
+    // Add user message
     const userMessage = {
-      id: messages.length + 1,
+      id: Date.now(), // Unique ID
       sender: "human",
       type: "text",
       content: inputValue,
@@ -31,8 +31,8 @@ export function Chat() {
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInputValue("");
 
-    // Send the message to the FastAPI backend
     setIsLoading(true);
+
     try {
       const response = await fetch(
         "https://tenant-aware-chatbot-agent.onrender.com/query/",
@@ -41,7 +41,7 @@ export function Chat() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ message: inputValue }),
+          body: JSON.stringify({ input: inputValue }), // ✅ Correct payload
         }
       );
 
@@ -50,26 +50,28 @@ export function Chat() {
       }
 
       const data = await response.json();
+      console.log("API Response:", data);
 
-      // Add the bot's response to the chat
+      // Extract relevant response (based on your API structure)
       const botMessage = {
-        id: messages.length + 2,
+        id: Date.now(), // Unique ID
         sender: "bot",
         type: "text",
-        content: `Action: ${data.llm_response.action}, Robot: ${
-          data.llm_response.robot_id
-        }. API Response: ${JSON.stringify(data.api_response)}`,
+        content: `API Details: ${JSON.stringify(data, null, 2)}`, // ✅ Adjusted for structured API response
       };
+
       setMessages((prevMessages) => [...prevMessages, botMessage]);
     } catch (error) {
-      console.error("Error fetching response from the API:", error);
-      const errorMessage = {
-        id: messages.length + 2,
-        sender: "bot",
-        type: "text",
-        content: "Sorry, I couldn't process your request. Please try again.",
-      };
-      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      console.error("Error fetching response:", error);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          id: Date.now(),
+          sender: "bot",
+          type: "text",
+          content: "Sorry, I couldn't process your request. Please try again.",
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
