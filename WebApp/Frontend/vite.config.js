@@ -13,8 +13,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/chat": {
-        target: "https://tenant-aware-chatbot.onrender.com/",
+      "/query": {
+        target: "https://tenant-aware-chatbot-agent.onrender.com/",
         changeOrigin: true,
         secure: false,
         // rewrite: (path) => path.replace(/^\/chat/, ""),

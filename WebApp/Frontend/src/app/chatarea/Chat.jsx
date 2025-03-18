@@ -35,7 +35,7 @@ export function Chat() {
     setIsLoading(true);
     try {
       const response = await fetch(
-        "https://tenant-aware-chatbot.onrender.com/chat/",
+        "https://tenant-aware-chatbot-agent.onrender.com/query/",
         {
           method: "POST",
           headers: {
