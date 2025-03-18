@@ -1,13 +1,17 @@
+from fastapi import FastAPI, HTTPException
 from langchain_groq import ChatGroq
 from langchain.agents import create_react_agent, AgentExecutor, tool
 from langchain_core.prompts import PromptTemplate
-from langchain import hub
 import requests
 import json
 import re
+import uvicorn
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 load_dotenv()
+
+app = FastAPI()
 
 @tool
 def get_api_data():
@@ -136,23 +140,28 @@ tools = [get_api_data]
 agent = create_react_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-# Invoke the agent with the user's query
-response = agent_executor.invoke({"input": "can you tell me where can i sell my phone"})
+class QueryRequest(BaseModel):
+    input: str
 
-# Process the response to extract structured data
-try:
-    # Extract JSON from the final answer
-    final_answer = response.get('output', '')
+@app.post("/query/")
+async def query_api(request: QueryRequest):
+    try:
+        # Invoke the agent with the user's query
+        response = agent_executor.invoke({"input": request.input})
 
-    # Replace escaped underscores with regular underscores
-    final_answer = final_answer.replace("\\_", "_")
+        # Process the response to extract structured data
+        final_answer = response.get('output', '')
 
-    # Parse the JSON string
-    retrieved_data = json.loads(final_answer)
-    print(json.dumps(retrieved_data, indent=2))
+        # Replace escaped underscores with regular underscores
+        final_answer = final_answer.replace("\\_", "_")
 
-except json.JSONDecodeError as e:
-    print(f"JSON Decode Error: {e}")
-    print("Raw Response:", final_answer)
-except Exception as e:
-    print(f"Error processing response: {e}")
+        # Parse the JSON string
+        retrieved_data = json.loads(final_answer)
+        return retrieved_data
+
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail=f"JSON Decode Error: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing response: {e}")
+
+uvicorn.run(app, host="0.0.0.0", port=8000)
