@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -20,6 +20,84 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+function ParameterInput({ parameter, onChange, onDelete }) {
+  return (
+    <div className="flex items-center gap-2 mb-2">
+      <Input
+        value={parameter.name}
+        onChange={(e) => onChange({ ...parameter, name: e.target.value })}
+        placeholder="Parameter name"
+        className="h-9"
+      />
+      <Select
+        value={parameter.type}
+        onValueChange={(value) => onChange({ ...parameter, type: value })}
+      >
+        <SelectTrigger className="h-9 w-[120px]">
+          <SelectValue placeholder="Type" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="string">Text</SelectItem>
+          <SelectItem value="number">Number</SelectItem>
+          <SelectItem value="boolean">Yes/No</SelectItem>
+          <SelectItem value="date">Date</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select
+        value={parameter.requirement}
+        onValueChange={(value) =>
+          onChange({ ...parameter, requirement: value })
+        }
+      >
+        <SelectTrigger className="h-9 w-[120px]">
+          <SelectValue placeholder="Required?" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="required">Required</SelectItem>
+          <SelectItem value="optional">Optional</SelectItem>
+        </SelectContent>
+      </Select>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={onDelete}
+        className="h-9 w-9"
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
+function HeaderInput({ header, onChange, onDelete }) {
+  return (
+    <div className="flex items-center gap-2 mb-2">
+      <Input
+        value={header.key}
+        onChange={(e) => onChange({ ...header, key: e.target.value })}
+        placeholder="Header name (e.g., Authorization)"
+        className="h-9"
+      />
+      <Input
+        value={header.value}
+        onChange={(e) => onChange({ ...header, value: e.target.value })}
+        placeholder="Value (e.g., Bearer token)"
+        className="h-9"
+      />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={onDelete}
+        className="h-9 w-9"
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
 
 export function AddApiForm() {
   const [apiData, setApiData] = useState({
@@ -37,8 +115,16 @@ export function AddApiForm() {
       path: "",
       method: "GET",
       purpose: "",
-      params: JSON.stringify(), // Initialize params as an empty JSON object
-      headers: JSON.stringify(), // Initialize headers as an empty JSON object
+      parameters: [], // Changed from params string to parameters array
+      isRequired: false,
+    },
+  ]);
+
+  const [headers, setHeaders] = useState([
+    {
+      id: 1,
+      key: "Content-Type",
+      value: "application/json",
     },
   ]);
 
@@ -60,6 +146,60 @@ export function AddApiForm() {
     );
   };
 
+  const handleParameterChange = (endpointId, parameterId, updatedParameter) => {
+    setEndpoints((prev) =>
+      prev.map((endpoint) => {
+        if (endpoint.id === endpointId) {
+          return {
+            ...endpoint,
+            parameters: endpoint.parameters.map((param) =>
+              param.id === parameterId ? updatedParameter : param
+            ),
+          };
+        }
+        return endpoint;
+      })
+    );
+  };
+
+  const addParameter = (endpointId) => {
+    setEndpoints((prev) =>
+      prev.map((endpoint) => {
+        if (endpoint.id === endpointId) {
+          return {
+            ...endpoint,
+            parameters: [
+              ...endpoint.parameters,
+              {
+                id: Date.now(),
+                name: "",
+                type: "string",
+                requirement: "required",
+              },
+            ],
+          };
+        }
+        return endpoint;
+      })
+    );
+  };
+
+  const deleteParameter = (endpointId, parameterId) => {
+    setEndpoints((prev) =>
+      prev.map((endpoint) => {
+        if (endpoint.id === endpointId) {
+          return {
+            ...endpoint,
+            parameters: endpoint.parameters.filter(
+              (param) => param.id !== parameterId
+            ),
+          };
+        }
+        return endpoint;
+      })
+    );
+  };
+
   const addEndpoint = () => {
     const newId =
       endpoints.length > 0 ? Math.max(...endpoints.map((e) => e.id)) + 1 : 1;
@@ -70,8 +210,8 @@ export function AddApiForm() {
         path: "",
         method: "GET",
         purpose: "",
-        params: JSON.stringify({}),
-        headers: JSON.stringify({}),
+        parameters: [], // Initialize with empty parameters array
+        isRequired: false,
       },
     ]);
   };
@@ -91,10 +231,26 @@ export function AddApiForm() {
         path: "",
         method: "GET",
         purpose: "",
-        params: JSON.stringify({}),
-        headers: JSON.stringify({}),
+        parameters: [],
+        isRequired: false,
       },
     ]);
+  };
+
+  const addHeader = () => {
+    const newId =
+      headers.length > 0 ? Math.max(...headers.map((h) => h.id)) + 1 : 1;
+    setHeaders([...headers, { id: newId, key: "", value: "" }]);
+  };
+
+  const updateHeader = (headerId, updatedHeader) => {
+    setHeaders((prev) =>
+      prev.map((header) => (header.id === headerId ? updatedHeader : header))
+    );
+  };
+
+  const deleteHeader = (headerId) => {
+    setHeaders((prev) => prev.filter((header) => header.id !== headerId));
   };
 
   const handleSubmit = async (e) => {
@@ -104,6 +260,19 @@ export function AddApiForm() {
     setIsSubmitting(true); // Disable the submit button
 
     try {
+      // Convert headers array to object format
+      const headersObject = headers.reduce((acc, header) => {
+        if (header.key && header.value) {
+          acc[header.key] = header.value;
+        }
+        return acc;
+      }, {});
+
+      const apiDataWithHeaders = {
+        ...apiData,
+        headers: headersObject,
+      };
+
       const response = await fetch(
         "https://tenant-aware-chatbot-1.onrender.com/api/add",
         {
@@ -111,7 +280,7 @@ export function AddApiForm() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ apiData, endpoints }),
+          body: JSON.stringify({ apiData: apiDataWithHeaders, endpoints }),
         }
       );
 
@@ -189,14 +358,59 @@ export function AddApiForm() {
 
             <div className="space-y-2">
               <Label htmlFor="headers">Headers</Label>
-              <Textarea
-                id="headers"
-                name="headers"
-                value={apiData.headers}
-                onChange={handleApiDataChange}
-                placeholder='{"Authorization": "Bearer token", "Content-Type": "application/json"}'
-                rows={2}
-              />
+              <div className="space-y-2 border rounded-md p-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <p className="text-sm text-muted-foreground flex-1">
+                    Common headers:
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newId =
+                        headers.length > 0
+                          ? Math.max(...headers.map((h) => h.id)) + 1
+                          : 1;
+                      setHeaders([
+                        ...headers,
+                        {
+                          id: newId,
+                          key: "Authorization",
+                          value: "Bearer ",
+                        },
+                      ]);
+                    }}
+                  >
+                    + Auth Header
+                  </Button>
+                </div>
+
+                {headers.map((header) => (
+                  <HeaderInput
+                    key={header.id}
+                    header={header}
+                    onChange={(updatedHeader) =>
+                      updateHeader(header.id, updatedHeader)
+                    }
+                    onDelete={() => deleteHeader(header.id)}
+                  />
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addHeader}
+                  className="w-full mt-2"
+                >
+                  <Plus className="h-4 w-4 mr-2" /> Add Header
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Common headers include Authorization for authentication and
+                Content-Type for specifying data format.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -289,20 +503,33 @@ export function AddApiForm() {
                         />
                       </TableCell>
                       <TableCell>
-                        <Input
-                          type="text"
-                          value={endpoint.params}
-                          onChange={(e) =>
-                            handleEndpointChange(
-                              endpoint.id,
-                              "params",
-                              e.target.value
-                            )
-                          }
-                          placeholder='{"param1": "required", "param2": "optional"}'
-                          className="min-h-0 h-9 py-2"
-                          rows={2}
-                        />
+                        <div className="space-y-2">
+                          {endpoint.parameters.map((param) => (
+                            <ParameterInput
+                              key={param.id}
+                              parameter={param}
+                              onChange={(updatedParam) =>
+                                handleParameterChange(
+                                  endpoint.id,
+                                  param.id,
+                                  updatedParam
+                                )
+                              }
+                              onDelete={() =>
+                                deleteParameter(endpoint.id, param.id)
+                              }
+                            />
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addParameter(endpoint.id)}
+                            className="w-full"
+                          >
+                            <Plus className="h-4 w-4 mr-2" /> Add Parameter
+                          </Button>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Input
