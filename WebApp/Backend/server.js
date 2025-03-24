@@ -25,6 +25,34 @@ const pool = new Pool({
   connectionString: process.env.NEON_CONNECTION_URI,
 });
 
+/*
+Database Schema:
+---------------
+CREATE TABLE apis (
+    id SERIAL PRIMARY KEY,
+    company_name TEXT NOT NULL,
+    base_url TEXT NOT NULL,
+    purpose TEXT,
+    api_key TEXT NOT NULL,
+    headers JSON, 
+    auth_type TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+);
+
+CREATE TABLE endpoints (
+    id SERIAL PRIMARY KEY,
+    api_id INTEGER REFERENCES apis(id) ON DELETE CASCADE,
+    path TEXT NOT NULL,
+    method TEXT NOT NULL,
+    purpose TEXT,
+    params JSON,
+    headers JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+*/
+
 // Create API and endpoints in the database
 app.post("/api/add", async (req, res) => {
   const { apiData, endpoints } = req.body;
@@ -32,7 +60,26 @@ app.post("/api/add", async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    // Insert API data
+    // Process API headers from array to object if needed
+    let headersObject = apiData.headers;
+    if (Array.isArray(apiData.headers)) {
+      headersObject = apiData.headers.reduce((acc, header) => {
+        if (header.key && header.value) {
+          acc[header.key] = header.value;
+        }
+        return acc;
+      }, {});
+    } else if (typeof apiData.headers === "string") {
+      // Try to parse if it's a JSON string
+      try {
+        headersObject = JSON.parse(apiData.headers);
+      } catch (e) {
+        console.error("Error parsing headers JSON string:", e);
+        headersObject = {};
+      }
+    }
+
+    // Insert API data, ensuring all fields match the database schema
     const apiRes = await client.query(
       `
       INSERT INTO apis (
@@ -48,16 +95,43 @@ app.post("/api/add", async (req, res) => {
       [
         apiData.companyName,
         apiData.baseUrl,
-        apiData.purpose,
+        apiData.purpose || "", // Default to empty string if null
         apiData.apiKey,
-        apiData.headers,
-        apiData.authType,
+        headersObject,
+        apiData.authType || "", // Default to empty string if null
       ]
     );
     const apiId = apiRes.rows[0].id;
 
     // Insert endpoints
     for (let endpoint of endpoints) {
+      // Process endpoint headers from array to object if needed
+      let endpointHeadersObject = endpoint.headers;
+      if (Array.isArray(endpoint.headers)) {
+        endpointHeadersObject = endpoint.headers.reduce((acc, header) => {
+          if (header.key && header.value) {
+            acc[header.key] = header.value;
+          }
+          return acc;
+        }, {});
+      }
+
+      // Process parameters for storage
+      let paramsObject = endpoint.params || {};
+
+      // If we have parameters array from the new UI, convert to appropriate format
+      if (Array.isArray(endpoint.parameters)) {
+        paramsObject = endpoint.parameters.reduce((acc, param) => {
+          if (param.name) {
+            acc[param.name] = {
+              type: param.type || "string",
+              required: param.requirement === "required",
+            };
+          }
+          return acc;
+        }, {});
+      }
+
       await client.query(
         `
         INSERT INTO endpoints (
@@ -73,19 +147,19 @@ app.post("/api/add", async (req, res) => {
           apiId,
           endpoint.path,
           endpoint.method,
-          endpoint.purpose,
-          endpoint.params,
-          endpoint.headers,
+          endpoint.purpose || "", // Default to empty string if null
+          paramsObject,
+          endpointHeadersObject,
         ]
       );
     }
 
     await client.query("COMMIT");
-    res.status(201).send("API added successfully");
+    res.status(201).send({ success: true, apiId: apiId });
   } catch (e) {
     await client.query("ROLLBACK");
     console.error("Error:", e);
-    res.status(500).send("Failed to add API");
+    res.status(500).send({ success: false, error: e.message });
   } finally {
     client.release();
   }

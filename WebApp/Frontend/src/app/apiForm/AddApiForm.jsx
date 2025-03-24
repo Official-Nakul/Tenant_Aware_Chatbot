@@ -77,23 +77,23 @@ function HeaderInput({ header, onChange, onDelete }) {
       <Input
         value={header.key}
         onChange={(e) => onChange({ ...header, key: e.target.value })}
-        placeholder="Header name (e.g., Authorization)"
-        className="h-9"
+        placeholder="Header name"
+        className="h-7 text-sm"
       />
       <Input
         value={header.value}
         onChange={(e) => onChange({ ...header, value: e.target.value })}
-        placeholder="Value (e.g., Bearer token)"
-        className="h-9"
+        placeholder="Value"
+        className="h-7 text-sm"
       />
       <Button
         type="button"
         variant="ghost"
         size="icon"
         onClick={onDelete}
-        className="h-9 w-9"
+        className="h-7 w-7"
       >
-        <X className="h-4 w-4" />
+        <X className="h-3 w-3" />
       </Button>
     </div>
   );
@@ -115,7 +115,8 @@ export function AddApiForm() {
       path: "",
       method: "GET",
       purpose: "",
-      parameters: [], // Changed from params string to parameters array
+      parameters: [],
+      headers: [], // Changed from string to array of objects
       isRequired: false,
     },
   ]);
@@ -211,6 +212,7 @@ export function AddApiForm() {
         method: "GET",
         purpose: "",
         parameters: [], // Initialize with empty parameters array
+        headers: [], // Initialize with empty headers array
         isRequired: false,
       },
     ]);
@@ -232,6 +234,7 @@ export function AddApiForm() {
         method: "GET",
         purpose: "",
         parameters: [],
+        headers: [],
         isRequired: false,
       },
     ]);
@@ -253,6 +256,56 @@ export function AddApiForm() {
     setHeaders((prev) => prev.filter((header) => header.id !== headerId));
   };
 
+  const handleEndpointHeaderChange = (endpointId, headerId, updatedHeader) => {
+    setEndpoints((prev) =>
+      prev.map((endpoint) => {
+        if (endpoint.id === endpointId) {
+          return {
+            ...endpoint,
+            headers: endpoint.headers.map((header) =>
+              header.id === headerId ? updatedHeader : header
+            ),
+          };
+        }
+        return endpoint;
+      })
+    );
+  };
+
+  const addEndpointHeader = (endpointId) => {
+    setEndpoints((prev) =>
+      prev.map((endpoint) => {
+        if (endpoint.id === endpointId) {
+          const newId =
+            endpoint.headers.length > 0
+              ? Math.max(...endpoint.headers.map((h) => h.id)) + 1
+              : 1;
+          return {
+            ...endpoint,
+            headers: [...endpoint.headers, { id: newId, key: "", value: "" }],
+          };
+        }
+        return endpoint;
+      })
+    );
+  };
+
+  const deleteEndpointHeader = (endpointId, headerId) => {
+    setEndpoints((prev) =>
+      prev.map((endpoint) => {
+        if (endpoint.id === endpointId) {
+          return {
+            ...endpoint,
+            headers: endpoint.headers.filter(
+              (header) => header.id !== headerId
+            ),
+          };
+        }
+        return endpoint;
+      })
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return; // Prevent multiple submissions
@@ -260,27 +313,41 @@ export function AddApiForm() {
     setIsSubmitting(true); // Disable the submit button
 
     try {
-      // Convert headers array to object format
-      const headersObject = headers.reduce((acc, header) => {
-        if (header.key && header.value) {
-          acc[header.key] = header.value;
-        }
-        return acc;
-      }, {});
+      const processedEndpoints = endpoints.map((endpoint) => {
+        // Convert headers array to object format
+        const headersObject = endpoint.headers.reduce((acc, header) => {
+          if (header.key && header.value) {
+            acc[header.key] = header.value;
+          }
+          return acc;
+        }, {});
+
+        return {
+          ...endpoint,
+          headers: headersObject,
+        };
+      });
 
       const apiDataWithHeaders = {
         ...apiData,
-        headers: headersObject,
+        headers: processedEndpoints.reduce((acc, endpoint) => {
+          acc[endpoint.path] = endpoint.headers;
+          return acc;
+        }, {}),
       };
 
       const response = await fetch(
         "https://tenant-aware-chatbot-1.onrender.com/api/add",
+        //"http://localhost:5000/api/add",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ apiData: apiDataWithHeaders, endpoints }),
+          body: JSON.stringify({
+            apiData: apiDataWithHeaders,
+            endpoints: processedEndpoints,
+          }),
         }
       );
 
@@ -468,7 +535,7 @@ export function AddApiForm() {
                           required
                         />
                       </TableCell>
-                      <TableCell className="flex justify-center items-center">
+                      <TableCell>
                         <Select
                           value={endpoint.method}
                           onValueChange={(value) =>
@@ -532,20 +599,91 @@ export function AddApiForm() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Input
-                          type="text"
-                          value={endpoint.headers}
-                          onChange={(e) =>
-                            handleEndpointChange(
-                              endpoint.id,
-                              "headers",
-                              e.target.value
-                            )
-                          }
-                          placeholder='{"Content-Type": "application/json"}'
-                          className="min-h-0 h-9 py-2"
-                          rows={2}
-                        />
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => {
+                                setEndpoints((prev) =>
+                                  prev.map((ep) => {
+                                    if (ep.id === endpoint.id) {
+                                      return {
+                                        ...ep,
+                                        headers: [
+                                          ...ep.headers,
+                                          {
+                                            id: Date.now(),
+                                            key: "Content-Type",
+                                            value: "application/json",
+                                          },
+                                        ],
+                                      };
+                                    }
+                                    return ep;
+                                  })
+                                );
+                              }}
+                            >
+                              + Content-Type
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => {
+                                setEndpoints((prev) =>
+                                  prev.map((ep) => {
+                                    if (ep.id === endpoint.id) {
+                                      return {
+                                        ...ep,
+                                        headers: [
+                                          ...ep.headers,
+                                          {
+                                            id: Date.now(),
+                                            key: "Authorization",
+                                            value: "Bearer ",
+                                          },
+                                        ],
+                                      };
+                                    }
+                                    return ep;
+                                  })
+                                );
+                              }}
+                            >
+                              + Auth
+                            </Button>
+                          </div>
+                          {endpoint.headers.map((header) => (
+                            <HeaderInput
+                              key={header.id}
+                              header={header}
+                              onChange={(updatedHeader) =>
+                                handleEndpointHeaderChange(
+                                  endpoint.id,
+                                  header.id,
+                                  updatedHeader
+                                )
+                              }
+                              onDelete={() =>
+                                deleteEndpointHeader(endpoint.id, header.id)
+                              }
+                            />
+                          ))}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => addEndpointHeader(endpoint.id)}
+                            className="w-full h-7 text-xs"
+                          >
+                            <Plus className="h-3 w-3 mr-1" /> Add Header
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
