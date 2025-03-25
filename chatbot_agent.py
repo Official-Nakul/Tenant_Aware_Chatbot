@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import urllib.parse
 from typing import Dict, Any, List
+import uvicorn
 import os
 
 # Load environment variables
@@ -27,8 +28,6 @@ app.add_middleware(
 )
 
 # Get port from environment variable or use default
-BACKEND_PORT = os.getenv("BACKEND_PORT", "5000")
-BACKEND_URL = "https://tenant-aware-chatbot-1.onrender.com/api/all"
 
 @tool
 def get_api_data():
@@ -200,8 +199,8 @@ async def query_api(request: QueryRequest):
         raise HTTPException(status_code=400, detail=f"Response parsing error: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing request: {e}")
-
+"""
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)"""
