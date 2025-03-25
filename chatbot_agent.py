@@ -35,7 +35,7 @@ def get_api_data():
     """
     Fetches the list of available APIs stored in the database.
     """
-    url = f"{BACKEND_URL}/api/all"
+    url = "https://tenant-aware-chatbot-1.onrender.com/api/all"
     try:
         response = requests.get(url)
         response.raise_for_status()
