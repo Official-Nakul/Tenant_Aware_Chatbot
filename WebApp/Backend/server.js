@@ -8,12 +8,23 @@ const app = express();
 // Enable CORS for specific origins
 const allowedOrigins = [
   "https://tenant-aware-chatbot-ebl5dzn0v-official-nakuls-projects.vercel.app",
-  "http://localhost:3000", // Add localhost for development
+  "http://localhost:3000", // Frontend development
+  "http://localhost:8000", // chatbot_agent service
 ];
 
 app.use(
   cors({
-    origin: true, // Allows any origin dynamically
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, curl requests)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg =
+          "The CORS policy for this site does not allow access from the specified Origin.";
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
     credentials: true,
   })
 );
@@ -203,8 +214,13 @@ app.get("/api/all", async (req, res) => {
   }
 });
 
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "UP", message: "Backend server is running" });
+});
+
 // Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Backend server running on port ${PORT}`);
 });
