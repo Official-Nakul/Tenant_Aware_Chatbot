@@ -28,7 +28,7 @@ app.add_middleware(
 
 # Get port from environment variable or use default
 BACKEND_PORT = os.getenv("BACKEND_PORT", "5000")
-BACKEND_URL = "http://localhost:5000"
+BACKEND_URL = "https://tenant-aware-chatbot-1.onrender.com/api/all"
 
 @tool
 def get_api_data():

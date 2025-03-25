@@ -6,11 +6,7 @@ require("dotenv").config();
 const app = express();
 
 // Enable CORS for specific origins
-const allowedOrigins = [
-  "https://tenant-aware-chatbot-ebl5dzn0v-official-nakuls-projects.vercel.app",
-  "http://localhost:3000", // Frontend development
-  "http://localhost:8000", // chatbot_agent service
-];
+const allowedOrigins = ["*"];
 
 app.use(
   cors({

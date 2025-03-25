@@ -9,8 +9,8 @@ import SyntaxHighlighter from "react-syntax-highlighter";
 import { atomOneDark } from "react-syntax-highlighter/dist/cjs/styles/hljs";
 
 // API URL configuration - change this when deploying
-const API_URL = "http://localhost:8000/query/";
-// For production: const API_URL = "https://your-production-url.com/query/";
+//const API_URL = "http://localhost:8000/query/";
+const API_URL = "https://tenant-aware-chatbot-agent.onrender.com/query/";
 
 export function Chat() {
   const [inputValue, setInputValue] = useState("");
