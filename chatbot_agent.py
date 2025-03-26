@@ -10,11 +10,9 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import urllib.parse
 from typing import Dict, Any, List
-import uvicorn
-import os
 
 # Load environment variables
-load_dotenv()
+# load_dotenv()
 
 app = FastAPI()
 
@@ -85,6 +83,7 @@ Important Guidelines:
 2. For POST/PUT requests, include the body structure
 3. Include all required headers and parameters
 4. Ensure the JSON is valid and properly escaped
+5. only construct api using recieved apis from the database
 
 Begin!
 
@@ -93,7 +92,8 @@ Question: {input}
 """
 
 llm = ChatGroq(
-    model="llama3-70b-8192",
+    model="qwen-2.5-32b",
+    # model="mistral-saba-24b",
     temperature=0,
     max_tokens=None,
     timeout=60,
