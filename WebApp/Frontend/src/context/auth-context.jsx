@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const AuthContext = createContext();
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://tenant-aware-chatbot-1.onrender.com";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
