@@ -1,10 +1,38 @@
-import "./App.css";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/auth-context";
+import { ProtectedRoute } from "./components/protected-route";
 import { DashBoard } from "./app/dashboard/DashBoard";
+import { SigninPage } from "./app/signin/page";
+import { SignupPage } from "./app/signup/page";
+import { Toaster } from "@/components/ui/sonner";
+
 function App() {
   return (
-    <>
-      <DashBoard />
-    </>
+    <Router>
+      <AuthProvider>
+        <Routes>
+          <Route path="/signin" element={<SigninPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashBoard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <DashBoard />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+        <Toaster position="top-right" richColors />
+      </AuthProvider>
+    </Router>
   );
 }
 
