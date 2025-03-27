@@ -35,7 +35,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Apply rate limiting to auth routes
-app.use("/auth", authLimiter);
+// app.use("/auth", authLimiter);
 
 // ================
 // Database Setup
