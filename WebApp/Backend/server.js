@@ -4,7 +4,7 @@ const { Pool } = require("pg");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const rateLimit = require("express-rate-limit");
+// const rateLimit = require("express-rate-limit");
 
 const app = express();
 
@@ -16,11 +16,11 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-strong-secret-key-here";
 const TOKEN_EXPIRY = "1h";
 
 // Rate limiting for auth endpoints
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // Limit each IP to 20 requests per windowMs
-  message: "Too many requests, please try again later",
-});
+// const authLimiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: 20, // Limit each IP to 20 requests per windowMs
+//   message: "Too many requests, please try again later",
+// });
 
 // ================
 // Middleware
@@ -430,6 +430,4 @@ app.use((err, req, res, next) => {
 // ================
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
-  console.log(`CORS Origin: ${process.env.CORS_ORIGIN || "*"}`);
 });
