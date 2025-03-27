@@ -2,8 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/auth-context";
 import { ProtectedRoute } from "./components/protected-route";
 import { DashBoard } from "./app/dashboard/DashBoard";
-import { SigninPage } from "./app/signin/page";
-import { SignupPage } from "./app/signup/page";
+import { SigninPage } from "./app/Signin/page";
+import { SignupPage } from "./app/Signup/page";
 import { Toaster } from "@/components/ui/sonner";
 
 function App() {
