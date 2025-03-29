@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
 const API_BASE_URL = "https://tenant-aware-chatbot-1.onrender.com";
@@ -11,11 +11,32 @@ export function AuthProvider({ children }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    const initializeAuth = async () => {
+      try {
+        const storedUser = localStorage.getItem("user");
+        const storedToken = localStorage.getItem("token");
+
+        if (storedUser && storedToken) {
+          setUser(JSON.parse(storedUser));
+          axios.defaults.headers.common[
+            "Authorization"
+          ] = `Bearer ${storedToken}`;
+
+          // Verify token with backend
+          const response = await axios.get(`${API_BASE_URL}/auth/verify-token`);
+          if (!response.data.valid) {
+            signout();
+          }
+        }
+      } catch (error) {
+        console.error("Token verification failed:", error);
+        signout();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
   }, []);
 
   const signup = async (formData) => {
@@ -26,19 +47,14 @@ export function AuthProvider({ children }) {
         password: formData.password,
       });
 
-      const userData = response.data.user;
-      const token = response.data.token;
+      const { user: userData, token } = response.data;
 
       localStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("token", token);
       setUser(userData);
-
-      // Set default auth header
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-      // Navigate to dashboard after successful signup
-      navigate("/dashboard");
-      return { success: true };
+      return { success: true, user: userData };
     } catch (error) {
       console.error("Signup error:", error.response?.data);
       return {
@@ -55,19 +71,14 @@ export function AuthProvider({ children }) {
         password: formData.password,
       });
 
-      const userData = response.data.user;
-      const token = response.data.token;
+      const { user: userData, token } = response.data;
 
       localStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("token", token);
       setUser(userData);
-
-      // Set default auth header
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-      // Navigate to dashboard after successful signin
-      navigate("/dashboard");
-      return { success: true };
+      return { success: true, user: userData };
     } catch (error) {
       console.error("Signin error:", error.response?.data);
       return {

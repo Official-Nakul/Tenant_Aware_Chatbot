@@ -44,6 +44,10 @@ export function SignupPage() {
 
       if (result.success) {
         toast.success("Account created successfully!");
+        // Small delay to ensure state updates propagate
+        setTimeout(() => {
+          navigate("/dashboard", { replace: true });
+        }, 50);
       } else {
         toast.error(result.error || "Sign up failed");
       }
