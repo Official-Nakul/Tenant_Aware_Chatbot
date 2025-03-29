@@ -20,6 +20,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useAuth } from "../../context/auth-context";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 function ParameterInput({ parameter, onChange, onDelete }) {
   return (
@@ -100,13 +103,15 @@ function HeaderInput({ header, onChange, onDelete }) {
 }
 
 export function AddApiForm() {
+  const { token } = useAuth();
+  const navigate = useNavigate();
   const [apiData, setApiData] = useState({
     companyName: "",
     baseUrl: "",
     purpose: "",
     apiKey: "",
-    headers: JSON.stringify(), // Initialize headers as an empty JSON object
-    authType: "", // New field for authentication type
+    headers: JSON.stringify({}),
+    authType: "",
   });
 
   const [endpoints, setEndpoints] = useState([
@@ -308,13 +313,12 @@ export function AddApiForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmitting) return; // Prevent multiple submissions
+    if (isSubmitting) return;
 
-    setIsSubmitting(true); // Disable the submit button
+    setIsSubmitting(true);
 
     try {
       const processedEndpoints = endpoints.map((endpoint) => {
-        // Convert headers array to object format
         const headersObject = endpoint.headers.reduce((acc, header) => {
           if (header.key && header.value) {
             acc[header.key] = header.value;
@@ -338,11 +342,11 @@ export function AddApiForm() {
 
       const response = await fetch(
         "https://tenant-aware-chatbot-1.onrender.com/api/add",
-        //"http://localhost:5000/api/add",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             apiData: apiDataWithHeaders,
@@ -352,16 +356,20 @@ export function AddApiForm() {
       );
 
       if (response.ok) {
-        alert("API added successfully");
-        clearForm(); // Clear the form after successful submission
+        toast.success("API added successfully");
+        clearForm();
       } else {
-        alert("Failed to add API");
+        if (response.status === 401) {
+          navigate("/signin");
+          return;
+        }
+        toast.error("Failed to add API");
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error submitting form");
+      toast.error("Error submitting form");
     } finally {
-      setIsSubmitting(false); // Re-enable the submit button
+      setIsSubmitting(false);
     }
   };
 

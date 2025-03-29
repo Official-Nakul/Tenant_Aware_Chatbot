@@ -29,6 +29,8 @@ app.use(
   cors({
     origin: process.env.CORS_ORIGIN || "*",
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json());
@@ -61,14 +63,20 @@ pool.query("SELECT NOW()", (err) => {
 // Utility Functions
 // ================
 const createToken = (user) => {
-  return jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
-    expiresIn: TOKEN_EXPIRY,
-  });
+  return jwt.sign(
+    {
+      id: user.id,
+      email: user.email,
+      exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour expiry
+    },
+    JWT_SECRET,
+    { algorithm: "HS256" }
+  );
 };
 
 const verifyToken = (token) => {
   try {
-    return jwt.verify(token, JWT_SECRET);
+    return jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
   } catch (err) {
     return null;
   }

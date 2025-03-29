@@ -7,12 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import ReactMarkdown from "react-markdown";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { atomOneDark } from "react-syntax-highlighter/dist/cjs/styles/hljs";
+import { useAuth } from "../../context/auth-context";
+import { useNavigate } from "react-router-dom";
 
 // API URL configuration - change this when deploying
 const API_URL = "https://tenant-aware-chatbot-agent.onrender.com/query/";
 // const API_URL = "http://localhost:8000/query/";
 
 export function Chat() {
+  const { token } = useAuth();
+  const navigate = useNavigate();
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState([
     {
@@ -24,6 +28,13 @@ export function Chat() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // Check authentication on component mount
+  useEffect(() => {
+    if (!token) {
+      navigate("/signin");
+    }
+  }, [token, navigate]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -56,11 +67,16 @@ export function Chat() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ input: inputValue }),
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          navigate("/signin");
+          return;
+        }
         throw new Error("Failed to fetch response from the API");
       }
 

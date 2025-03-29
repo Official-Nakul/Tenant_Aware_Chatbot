@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Header
 from langchain_groq import ChatGroq
 from langchain.agents import create_react_agent, AgentExecutor, tool
 from langchain_core.prompts import PromptTemplate
@@ -9,10 +9,13 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import urllib.parse
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+import jwt
+from datetime import datetime, timedelta
+import os
 
 # Load environment variables
-# load_dotenv()
+load_dotenv()
 
 app = FastAPI()
 
@@ -25,16 +28,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Get port from environment variable or use default
+# JWT Configuration
+JWT_SECRET = os.getenv("JWT_SECRET")
+JWT_ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+async def verify_token(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    
+    token = authorization.split(" ")[1]
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        if datetime.fromtimestamp(payload["exp"]) < datetime.now():
+            raise HTTPException(status_code=401, detail="Token has expired")
+        return payload
+    except jwt.JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 @tool
-def get_api_data():
+def get_api_data(token: str):
     """
     Fetches the list of available APIs stored in the database.
     """
     url = "https://tenant-aware-chatbot-1.onrender.com/api/all"
     try:
-        response = requests.get(url)
+        response = requests.get(
+            url,
+            headers={"Authorization": f"Bearer {token}"}
+        )
         response.raise_for_status()
         data = response.json()
 
@@ -174,13 +196,19 @@ def call_constructed_api(api_info: Dict[str, Any]) -> Dict[str, Any]:
         }
 
 @app.post("/query/")
-async def query_api(request: QueryRequest):
+async def query_api(
+    request: QueryRequest,
+    token_data: Dict = Depends(verify_token)
+):
     """
     Endpoint to query the chatbot and return structured API details.
     """
     try:
         # Get the agent's response
-        response = agent_executor.invoke({"input": request.input})
+        response = agent_executor.invoke({
+            "input": request.input,
+            "token": token_data["token"]  # Pass token to the agent
+        })
         response_text = response.get('output', '')
         
         # Clean and extract JSON from the response
@@ -199,8 +227,8 @@ async def query_api(request: QueryRequest):
         raise HTTPException(status_code=400, detail=f"Response parsing error: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing request: {e}")
-"""
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)"""
+    uvicorn.run(app, host="0.0.0.0", port=port)
