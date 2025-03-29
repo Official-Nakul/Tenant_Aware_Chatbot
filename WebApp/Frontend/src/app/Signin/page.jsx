@@ -43,7 +43,6 @@ export function SigninPage() {
 
       if (result.success) {
         toast.success("Signed in successfully");
-        navigate("/dashboard");
       } else {
         toast.error(result.error || "Sign in failed");
       }

@@ -36,6 +36,8 @@ export function AuthProvider({ children }) {
       // Set default auth header
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
+      // Navigate to dashboard after successful signup
+      navigate("/dashboard");
       return { success: true };
     } catch (error) {
       console.error("Signup error:", error.response?.data);
@@ -63,6 +65,8 @@ export function AuthProvider({ children }) {
       // Set default auth header
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
+      // Navigate to dashboard after successful signin
+      navigate("/dashboard");
       return { success: true };
     } catch (error) {
       console.error("Signin error:", error.response?.data);

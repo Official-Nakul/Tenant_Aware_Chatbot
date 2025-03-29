@@ -33,7 +33,6 @@ export function SignupPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate all fields
     if (!formData.username || !formData.email || !formData.password) {
       toast.error("Please fill in all fields");
       return;
@@ -45,7 +44,6 @@ export function SignupPage() {
 
       if (result.success) {
         toast.success("Account created successfully!");
-        navigate("/dashboard");
       } else {
         toast.error(result.error || "Sign up failed");
       }
