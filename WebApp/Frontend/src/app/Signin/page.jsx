@@ -43,10 +43,7 @@ export function SigninPage() {
 
       if (result.success) {
         toast.success("Signed in successfully");
-        // Small delay to ensure state updates propagate
-        setTimeout(() => {
-          navigate("/dashboard", { replace: true });
-        }, 50);
+        navigate("/dashboard");
       } else {
         toast.error(result.error || "Sign in failed");
       }
