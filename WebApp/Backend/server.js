@@ -264,7 +264,7 @@ app.get("/api/protected", authenticate, (req, res) => {
 // ================
 // Existing API Endpoints (from your original code)
 // ================
-app.post("/api/add", authenticate, async (req, res) => {
+app.post("/api/add", async (req, res) => {
   const { apiData, endpoints } = req.body;
   const client = await pool.connect();
 
@@ -364,7 +364,7 @@ app.post("/api/add", authenticate, async (req, res) => {
   }
 });
 
-app.get("/api/all", authenticate, async (req, res) => {
+app.get("/api/all", async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
